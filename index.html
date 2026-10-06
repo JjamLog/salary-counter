@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MY SALARY COUNTER</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f7f5;color:#191919;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif}
+  .card{max-width:620px;margin:auto;padding:28px 30px;border:1px solid #e8e8e5;border-radius:22px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.05)}
+  .top{font-size:13px;font-weight:700;letter-spacing:.08em;color:#777}
+  .title{margin-top:7px;font-size:28px;font-weight:800;letter-spacing:-.04em}
+  .amount{margin-top:34px;font-size:clamp(38px,9vw,68px);font-weight:850;letter-spacing:-.055em;line-height:1.05;white-space:nowrap}
+  .label{margin-top:9px;color:#888;font-size:14px}
+  .progress{height:7px;background:#eee;border-radius:99px;overflow:hidden;margin:25px 0 23px}
+  .bar{height:100%;background:#222;border-radius:99px;width:0;transition:width .5s}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .item{padding:15px;border-radius:15px;background:#f7f7f5}
+  .k{font-size:12px;color:#888;margin-bottom:6px}
+  .v{font-size:16px;font-weight:750}
+  details{margin-top:20px;border-top:1px solid #eee;padding-top:17px}
+  summary{cursor:pointer;font-size:13px;color:#777}
+  .settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}
+  input{width:100%;padding:10px 11px;border:1px solid #ddd;border-radius:10px;font:inherit}
+  .save{margin-top:10px;padding:10px 14px;border:0;border-radius:10px;background:#191919;color:#fff;cursor:pointer}
+  .foot{margin-top:13px;font-size:11px;color:#aaa}
+  @media(max-width:480px){.card{padding:22px 18px;border-radius:18px}.grid,.settings{grid-template-columns:1fr}.amount{margin-top:27px}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top">💼 MY SALARY COUNTER</div>
+  <div class="title">오늘까지 내가 번 돈</div>
+  <div class="amount" id="amount">₩ 0</div>
+  <div class="label" id="status">올해의 시간이 흐르는 만큼 급여가 쌓입니다</div>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <div class="grid">
+    <div class="item"><div class="k">📅 현재 날짜</div><div class="v" id="date"></div></div>
+    <div class="item"><div class="k">⏰ 현재 시간</div><div class="v" id="time"></div></div>
+    <div class="item"><div class="k">💰 하루 급여</div><div class="v" id="dayPay"></div></div>
+    <div class="item"><div class="k">⏱ 시간당 급여</div><div class="v" id="hourPay"></div></div>
+    <div class="item"><div class="k">📈 올해 예상 연봉</div><div class="v" id="salary"></div></div>
+    <div class="item"><div class="k">🎯 올해 남은 급여</div><div class="v" id="remaining"></div></div>
+  </div>
+
+  <details>
+    <summary>⚙️ 연봉 / 지급일 설정</summary>
+    <div class="settings">
+      <input id="salaryInput" type="number" min="0" step="10000" placeholder="연봉 (원)">
+      <input id="paydayInput" type="number" min="1" max="31" placeholder="월급 지급일">
+    </div>
+    <button class="save" onclick="saveSettings()">저장</button>
+  </details>
+  <div class="foot">※ 세전 연봉을 기준으로, 해당 연도의 경과 시간을 비례해 계산합니다.</div>
+</div>
+
+<script>
+const KEY="salaryCounterSettings";
+let settings=JSON.parse(localStorage.getItem(KEY)||'null')||{salary:37000000,payday:15};
+salaryInput.value=settings.salary; paydayInput.value=settings.payday;
+
+const won=n=>"₩ "+Math.floor(n).toLocaleString("ko-KR");
+function saveSettings(){
+  settings.salary=Math.max(0,Number(salaryInput.value)||0);
+  settings.payday=Math.min(31,Math.max(1,Number(paydayInput.value)||15));
+  localStorage.setItem(KEY,JSON.stringify(settings)); update();
+}
+function update(){
+  const now=new Date();
+  const y=now.getFullYear();
+  const start=new Date(y,0,1);
+  const end=new Date(y+1,0,1);
+  const elapsed=Math.max(0,Math.min(1,(now-start)/(end-start)));
+  const earned=settings.salary*elapsed;
+  const remaining=Math.max(0,settings.salary-earned);
+  const dayMs=24*60*60*1000;
+  const days=end-start;
+  const dayPay=settings.salary/(days/dayMs);
+  const hourPay=dayPay/24;
+
+  amount.textContent=won(earned);
+  date.textContent=now.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric",weekday:"short"});
+  time.textContent=now.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  dayPay.textContent=won(dayPay);
+  hourPay.textContent=won(hourPay);
+  salary.textContent=won(settings.salary);
+  remaining.textContent=won(remaining);
+  bar.style.width=(elapsed*100).toFixed(4)+"%";
+}
+update(); setInterval(update,1000);
+</script>
+</body>
+</html>
